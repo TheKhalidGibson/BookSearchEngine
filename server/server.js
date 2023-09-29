@@ -7,6 +7,7 @@ const path = require('path');
 // Uncomment the following code once you have built the queries and mutations in the client folder
 const { typeDefs, resolvers } = require('./schemas');
 const db = require('./config/connection');
+const { authMiddleware } = require('./utils/auth');
 
 
 const PORT = process.env.PORT || 3001;
@@ -17,28 +18,26 @@ const server = new ApolloServer({
   resolvers,
 });
 
-// Uncomment the following code once you have built the queries and mutations in the client folder
+
+// Create a new instance of an Apollo server with the GraphQL schema
 const startApolloServer = async () => {
   await server.start();
-  
-  app.use(express.urlencoded({ extended: true }));
+
+  app.use(express.urlencoded({ extended: false }));
   app.use(express.json());
-  
-  // Uncomment the following code once you have built the queries and mutations in the client folder
-  app.use('/graphql', expressMiddleware(server));
 
+  app.use('/graphql', expressMiddleware(server, {
+    context: authMiddleware
+  }));
 
-  // if we're in production, serve client/dist as static assets
   if (process.env.NODE_ENV === 'production') {
     app.use(express.static(path.join(__dirname, '../client/dist')));
 
-    // Uncomment this code once you have built out queries and mutations in the client folder
     app.get('*', (req, res) => {
       res.sendFile(path.join(__dirname, '../client/dist/index.html'));
     });
-  } 
+  }
 
-// Uncomment this code once you have built out queries and mutations in the client folder
   db.once('open', () => {
     app.listen(PORT, () => {
       console.log(`API server running on port ${PORT}!`);
@@ -47,6 +46,7 @@ const startApolloServer = async () => {
   });
 };
 
+// Call the async function to start the server
+  startApolloServer();
 
-// Uncomment the following code once you have built the queries and mutations in the client folder
-startApolloServer();
+

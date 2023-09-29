@@ -1,23 +1,21 @@
-const { User, Book } = require('../models');
-const { signToken, AuthenticationError } = require('../utils/auth');
-
+const { User } = require("../models");
+const { signToken, AuthenticationError } = require("../utils/auth");
 
 const resolvers = {
   Query: {
-    
     me: async (parent, args, context) => {
-        if (context.user) {
-          return User.findOne({ _id: context.user._id }).populate('books');
-        }
-        throw AuthenticationError;
-      },
-
-
+      if (context.user) {
+        return User.findOne({ _id: context.user._id }).populate("savedBooks");
+      }
+      throw AuthenticationError;
+    },
   },
 
   Mutation: {
     addUser: async (parent, { username, email, password }) => {
+      console.log("I made it");
       const user = await User.create({ username, email, password });
+      console.log(user);
       const token = signToken(user);
       return { token, user };
     },
@@ -38,42 +36,31 @@ const resolvers = {
 
       return { token, user };
     },
-    saveBook: async (parent, { description, title }, context) => {
+    saveBook: async (parent, { bookData }, context) => {
       if (context.user) {
-        const book = await Book.create({
-          description,
-          title,
-
-        });
-
-        await User.findOneAndUpdate(
+        const user = await User.findByIdAndUpdate(
           { _id: context.user._id },
-          { $addToSet: { books: book._id } }
+          { $addToSet: { savedBooks: bookData } }
         );
-
-        return book;
+        console.log(user.authors);
+        return user;
       }
       throw AuthenticationError;
-      ('You need to be logged in!');
+      ("You need to be logged in!");
     },
-    
+
     removeBook: async (parent, { bookId }, context) => {
       if (context.user) {
-        const book = await Book.findOneAndDelete({
-          _id: bookId,
-          authors: context.user.username,
-        });
-
-        await User.findOneAndUpdate(
+        const user = await User.findOneAndUpdate(
           { _id: context.user._id },
-          { $pull: { books: book._id } }
+          { $pull: { savedBooks: { bookId } } },
+          { new: true }
         );
 
-        return book;
+        return user;
       }
       throw AuthenticationError;
     },
-   
   },
 };
 

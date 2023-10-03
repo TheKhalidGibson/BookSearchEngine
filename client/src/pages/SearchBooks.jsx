@@ -45,7 +45,14 @@ const SearchBooks = () => {
     }
 
     try {
-      const {data} = await searchGoogleBooks(searchInput);
+      const response = await searchGoogleBooks(searchInput);
+
+      if (!response.ok) {
+        throw new Error('something went wrong!');
+      }
+
+      const { items } = await response.json();
+
 
       
       console.log(data)
@@ -77,9 +84,16 @@ const SearchBooks = () => {
     }
 
     try {
-      const {data} = await saveBook(bookToSave, token);
+      await saveBook({
 
-      console.log(data.saveBook)
+        variables: {
+
+          bookData: {...bookToSave}
+        }
+
+
+      })
+      // console.log(data.saveBook)
       // if book successfully saves to user's account, save book id to state
       setSavedBookIds([...savedBookIds, bookToSave.bookId]);
     } catch (err) {
